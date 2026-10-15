@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- carrinho de compras simples, dentro da área segura do ícone adaptativo -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,34h8l2,6h34l-6,18H46l-1,4h28v4H40l3,-12L36,38h-4z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,70m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M68,70m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+</vector>
