@@ -9,7 +9,11 @@ data class Produto(
     val precoCentavos: Int,
     val emoji: String = "🛒",
     /** Caminho dentro de app/src/main/assets, ex.: "produtos/bala.jpg". Se faltar, mostra o emoji. */
-    val imagem: String? = null
+    val imagem: String? = null,
+    /** Agrupa os produtos nos filtros do topo da loja (ex.: Doces, Bebidas). */
+    val categoria: String = "Outros",
+    /** Cor de embalagem (hex) que fica atrás da foto. */
+    val cor: String = "#2E3F5F"
 )
 
 @Serializable

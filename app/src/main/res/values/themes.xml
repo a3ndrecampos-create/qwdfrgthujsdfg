@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LojaNoCarro" parent="android:Theme.Material.Light.NoActionBar" />
-    <color name="ic_launcher_background">#FF6D00</color>
+    <style name="Theme.LojaNoCarro" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/noite</item>
+    </style>
+    <color name="noite">#0E1726</color>
+    <color name="ic_launcher_background">#0E1726</color>
 </resources>
