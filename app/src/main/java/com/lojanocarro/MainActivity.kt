@@ -37,7 +37,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
-enum class Modo { ESCOLHER, LOJA, MOTORISTA, CONFIG }
+enum class Modo { ESCOLHER, LOJA, MOTORISTA, CONFIG, FATURAMENTO }
 
 class MainActivity : ComponentActivity() {
     private val permissoes = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
@@ -155,9 +155,18 @@ class MainActivity : ComponentActivity() {
                             onPermitirSobreposicao = { pedirSobreposicao() },
                             mostrarBateria = !bateriaOk,
                             onPermitirBateria = { pedirIgnorarBateria() },
+                            onFaturamento = { core.mostrarFaturamento(true) },
                             onConfigurar = { core.mostrarConfig(true) },
                             onConfirmar = { core.confirmarPedido(it.id) }
                         )
+                        Modo.FATURAMENTO -> {
+                            BackHandler { core.mostrarFaturamento(false) }
+                            TelaFaturamento(
+                                core.vendas,
+                                onVoltar = { core.mostrarFaturamento(false) },
+                                onZerar = { core.zerarVendas() }
+                            )
+                        }
                         Modo.CONFIG -> TelaConfiguracao(
                             core.config,
                             onVoltar = { core.mostrarConfig(false) },

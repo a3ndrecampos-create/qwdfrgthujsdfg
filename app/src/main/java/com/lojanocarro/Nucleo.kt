@@ -65,6 +65,8 @@ class LojaCore private constructor(private val app: Context) {
     var config by mutableStateOf(LojaConfig("sua-chave-pix", "Seu Nome", "SAO PAULO"))
         private set
     val pedidos = mutableStateListOf<Pedido>()
+    /** Vendas pagas (só no celular do motorista), para a tela de faturamento. */
+    val vendas = mutableStateListOf<Venda>()
     var pagoId by mutableStateOf<String?>(null)
         private set
     var pareamento by mutableStateOf<Pareamento?>(null)
@@ -91,6 +93,10 @@ class LojaCore private constructor(private val app: Context) {
         criarCanais()
         // Config salva: no celular do motorista é a que ele editou; no tablet, a última que recebeu.
         scope.launch { store.configFlow.first()?.let { config = it } }
+        scope.launch {
+            val salvas = store.lerVendas()
+            vendas.addAll(0, salvas.filter { s -> vendas.none { it.id == s.id } })
+        }
     }
 
     // ---------- função do aparelho ----------
@@ -168,8 +174,27 @@ class LojaCore private constructor(private val app: Context) {
         overlay.esconder(id)
         link.enviar(Mensagem.PagamentoConfirmado(id))
         baixarEstoque(p)
+        registrarVenda(p)
         if (config.falarPedido) falador.falar(Falas.pedido(p))
         NotificationManagerCompat.from(app).cancel(id.hashCode())
+    }
+
+    // ---------- faturamento ----------
+
+    private fun registrarVenda(p: Pedido) {
+        if (papel != "motorista" || vendas.any { it.id == p.id }) return
+        vendas += Venda(p.id, p.itens, System.currentTimeMillis())
+        val copia = vendas.toList()
+        scope.launch(Dispatchers.IO) { store.salvarVendas(copia) }
+    }
+
+    fun zerarVendas() {
+        vendas.clear()
+        scope.launch(Dispatchers.IO) { store.salvarVendas(emptyList()) }
+    }
+
+    fun mostrarFaturamento(mostrar: Boolean) {
+        modo = if (mostrar) Modo.FATURAMENTO else Modo.MOTORISTA
     }
 
     // ---------- estoque ----------

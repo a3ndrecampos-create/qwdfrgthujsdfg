@@ -131,14 +131,24 @@ fun TelaConfiguracao(
                     Text("Produtos", style = MaterialTheme.typography.titleLarge)
                     Text(
                         "Toque na foto para escolher uma da galeria. Ela vai para o tablet sozinha quando os dois estiverem conectados. " +
-                            "Em Estoque, coloque quantas unidades você tem. Com 0, o produto aparece como indisponível na loja. O estoque baixa sozinho a cada Pix confirmado.",
+                            "Marque ☆ em um produto para ele aparecer como sugestão no topo da loja (só um por vez). Em Estoque, coloque quantas unidades você tem. Com 0, o produto aparece como indisponível na loja. O estoque baixa sozinho a cada Pix confirmado.",
                         color = Paleta.TextoSuave, fontSize = 14.sp
                     )
                 }
             }
 
             itemsIndexed(produtos, key = { _, p -> p.id }) { i, p ->
-                LinhaProduto(p, onChange = { produtos[i] = it }, onRemover = { produtos.removeAt(i) })
+                LinhaProduto(
+                    p,
+                    onChange = { novo ->
+                        // Só uma sugestão por vez: ao marcar esta, desmarca as outras.
+                        if (novo.destaque && !p.destaque) {
+                            for (j in produtos.indices) if (j != i && produtos[j].destaque) produtos[j] = produtos[j].copy(destaque = false)
+                        }
+                        produtos[i] = novo
+                    },
+                    onRemover = { produtos.removeAt(i) }
+                )
             }
 
             item {
@@ -299,7 +309,13 @@ private fun LinhaProduto(p: Produto, onChange: (Produto) -> Unit, onRemover: () 
                 modifier = Modifier.width(110.dp)
             )
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                if (p.destaque) "★ Sugestão da loja" else "☆ Sugerir este produto",
+                color = if (p.destaque) Paleta.Amarelo else Paleta.TextoSuave, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(CircleShape).clickable { onChange(p.copy(destaque = !p.destaque)) }
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+            )
             Text(
                 "Remover", color = Paleta.Vermelho, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(CircleShape).clickable(onClick = onRemover).padding(horizontal = 14.dp, vertical = 12.dp)

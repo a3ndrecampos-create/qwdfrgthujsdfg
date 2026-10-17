@@ -193,6 +193,7 @@ fun TelaMotorista(
     onPermitirSobreposicao: () -> Unit,
     mostrarBateria: Boolean,
     onPermitirBateria: () -> Unit,
+    onFaturamento: () -> Unit,
     onConfigurar: () -> Unit,
     onConfirmar: (Pedido) -> Unit
 ) {
@@ -205,11 +206,18 @@ fun TelaMotorista(
                 Text("Pedidos", style = MaterialTheme.typography.headlineMedium)
                 StatusPill(estado)
             }
-            Text(
-                "Configurar", fontWeight = FontWeight.Bold,
-                modifier = Modifier.clip(CircleShape).background(Paleta.Painel).clickable(onClick = onConfigurar)
-                    .padding(horizontal = 18.dp, vertical = 12.dp)
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Faturamento", fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                    modifier = Modifier.clip(CircleShape).background(Paleta.Painel).clickable(onClick = onFaturamento)
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                )
+                Text(
+                    "Configurar", fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                    modifier = Modifier.clip(CircleShape).background(Paleta.Painel).clickable(onClick = onConfigurar)
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                )
+            }
         }
 
         CartaoLoja(lojaAberta, conectado = estado == "Conectado", onChange = onLojaAberta)

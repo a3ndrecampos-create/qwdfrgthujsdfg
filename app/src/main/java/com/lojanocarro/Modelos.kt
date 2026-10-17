@@ -33,6 +33,12 @@ data class Pedido(
     val totalCentavos get() = itens.sumOf { it.qtd * it.precoCentavos }
 }
 
+/** Pedido já pago, guardado no celular do motorista para o faturamento. */
+@Serializable
+data class Venda(val id: String, val itens: List<ItemPedido>, val pagoEm: Long) {
+    val totalCentavos get() = itens.sumOf { it.qtd * it.precoCentavos }
+}
+
 /** Configurada pelo motorista (modo Motorista) e enviada ao tablet no pareamento. */
 @Serializable
 data class LojaConfig(
