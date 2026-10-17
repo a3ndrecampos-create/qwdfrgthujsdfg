@@ -62,6 +62,4 @@ sealed class Mensagem {
     @Serializable data class PedirFotos(val nomes: List<String>) : Mensagem()
     /** Motorista -> tablet: um pedaço de uma foto (base64). O Nearby limita cada mensagem a 32 KB. */
     @Serializable data class FotoParte(val nome: String, val indice: Int, val total: Int, val dados: String) : Mensagem()
-    /** Abre ou fecha a loja. Quem muda avisa o outro aparelho; aberta = aparelho da loja travado em tela cheia. */
-    @Serializable data class LojaAberta(val aberta: Boolean) : Mensagem()
 }
