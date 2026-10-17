@@ -1,10 +1,20 @@
 package com.lojanocarro
 
+import java.text.Normalizer
 import java.util.Locale
 
 /** Gera o "Pix copia e cola" (BR Code estático) para exibir como QR Code. */
 object PixBrCode {
-    fun gerar(chave: String, nome: String, cidade: String, centavos: Int, txid: String): String {
+    /** O BR Code só aceita ASCII: tira acentos ("São Paulo" -> "SAO PAULO") e deixa em maiúsculas, senão o CRC/banco rejeita. */
+    private fun limpar(t: String): String =
+        Normalizer.normalize(t.trim(), Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "")
+            .filter { it.code in 32..126 }
+            .uppercase(Locale.ROOT)
+
+    fun gerar(chave: String, nomeRecebedor: String, cidadeRecebedor: String, centavos: Int, txid: String): String {
+        val nome = limpar(nomeRecebedor)
+        val cidade = limpar(cidadeRecebedor)
         fun f(id: String, v: String) = id + v.length.toString().padStart(2, '0') + v
         val conta = f("00", "br.gov.bcb.pix") + f("01", chave)
         val valor = "%.2f".format(Locale.US, centavos / 100.0)
