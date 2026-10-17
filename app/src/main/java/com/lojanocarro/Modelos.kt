@@ -16,8 +16,8 @@ data class Produto(
     val cor: String = "#2E3F5F",
     /** Aparece no banner do topo da loja como sugestão do motorista. */
     val destaque: Boolean = false,
-    /** Unidades em estoque. null = não controla (sempre disponível). 0 = esgotado. Baixa sozinho quando o Pix é confirmado. */
-    val estoque: Int? = null
+    /** Unidades em estoque. 0 (ou vazio) = indisponível: a loja bloqueia a compra. Baixa sozinho quando o Pix é confirmado. */
+    val estoque: Int = 0
 )
 
 @Serializable

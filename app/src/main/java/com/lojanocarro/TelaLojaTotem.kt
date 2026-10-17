@@ -79,7 +79,7 @@ fun TelaLojaTotem(
     // Se o estoque mudou (o motorista editou ou outra venda baixou), tira do carrinho o que não existe mais.
     LaunchedEffect(config.produtos) {
         config.produtos.forEach { p ->
-            val est = p.estoque ?: return@forEach
+            val est = p.estoque
             val q = carrinho[p.id] ?: return@forEach
             if (est <= 0) carrinho.remove(p.id) else if (q > est) carrinho[p.id] = est
         }
@@ -99,14 +99,13 @@ fun TelaLojaTotem(
     val categorias = remember(config.produtos) { listOf(TODAS) + config.produtos.map { it.categoria }.distinct() }
     val filtro = if (categoria in categorias) categoria else TODAS
     val visiveis = if (filtro == TODAS) config.produtos else config.produtos.filter { it.categoria == filtro }
-    val destaque = config.produtos.firstOrNull { it.destaque && ((it.estoque ?: 1) > 0) }
+    val destaque = config.produtos.firstOrNull { it.destaque && it.estoque > 0 }
     val qtdTotal = carrinho.values.sum()
     val total = config.produtos.sumOf { (carrinho[it.id] ?: 0) * it.precoCentavos }
 
     fun adicionar(p: Produto) {
         val atual = carrinho[p.id] ?: 0
-        val est = p.estoque
-        if (est != null && atual >= est) return // não deixa pedir mais do que tem
+        if (atual >= p.estoque) return // sem estoque (ou já pegou tudo): não adiciona
         carrinho[p.id] = atual + 1
     }
     fun remover(p: Produto) {
@@ -114,8 +113,9 @@ fun TelaLojaTotem(
         if (q <= 0) carrinho.remove(p.id) else carrinho[p.id] = q
     }
     fun finalizar() {
-        val itens = config.produtos.filter { (carrinho[it.id] ?: 0) > 0 }
-            .map { ItemPedido(it.id, it.nome, carrinho.getValue(it.id), it.precoCentavos) }
+        val itens = config.produtos.filter { (carrinho[it.id] ?: 0) > 0 && it.estoque > 0 }
+            .map { ItemPedido(it.id, it.nome, minOf(carrinho.getValue(it.id), it.estoque), it.precoCentavos) }
+        if (itens.isEmpty()) { carrinho.clear(); return }
         val ped = Pedido(UUID.randomUUID().toString().take(8), itens)
         pedido = ped
         onFinalizar(ped)
@@ -268,8 +268,8 @@ private fun TrilhoCategorias(
 @Composable
 private fun CardProduto(produto: Produto, qtd: Int, onAdd: () -> Unit, onRemove: () -> Unit) {
     val selecionado = qtd > 0
-    val esgotado = produto.estoque?.let { it <= 0 } == true
-    val noLimite = produto.estoque?.let { qtd >= it } == true
+    val esgotado = produto.estoque <= 0
+    val noLimite = qtd >= produto.estoque
     val borda by animateColorAsState(if (selecionado) Paleta.Amarelo else Color.Transparent, label = "borda")
     val forma = RoundedCornerShape(22.dp)
 
@@ -300,19 +300,12 @@ private fun CardProduto(produto: Produto, qtd: Int, onAdd: () -> Unit, onRemove:
                 minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis
             )
             Text(reais(produto.precoCentavos), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Paleta.Amarelo)
-            val restam = produto.estoque
-            if (restam != null && restam in 1..5) {
-                Text(
-                    if (restam == 1) "Resta 1" else "Restam $restam",
-                    color = Paleta.Ambar, fontWeight = FontWeight.Bold, fontSize = 13.sp
-                )
-            }
             Spacer(Modifier.height(8.dp))
             if (esgotado) {
                 Box(
                     Modifier.fillMaxWidth().height(44.dp).clip(CircleShape).background(Paleta.Linha),
                     contentAlignment = Alignment.Center
-                ) { Text("Esgotado", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Paleta.TextoSuave) }
+                ) { Text("Indisponível", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Paleta.TextoSuave) }
             } else if (!selecionado) {
                 Box(
                     Modifier.fillMaxWidth().height(44.dp).clip(CircleShape).background(Paleta.PainelAlto).clickable(onClick = onAdd),

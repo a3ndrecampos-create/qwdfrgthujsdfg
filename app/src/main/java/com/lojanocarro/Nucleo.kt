@@ -181,10 +181,9 @@ class LojaCore private constructor(private val app: Context) {
         var mudou = false
         val novos = config.produtos.map { prod ->
             val q = vendidos[prod.id]
-            val est = prod.estoque
-            if (q != null && est != null) {
+            if (q != null) {
                 mudou = true
-                prod.copy(estoque = (est - q).coerceAtLeast(0))
+                prod.copy(estoque = (prod.estoque - q).coerceAtLeast(0))
             } else prod
         }
         if (!mudou) return

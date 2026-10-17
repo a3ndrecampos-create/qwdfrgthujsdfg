@@ -9,7 +9,6 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 
@@ -33,9 +32,9 @@ class OverlayPedido(private val ctx: Context, private val aoConfirmar: (String) 
         try {
             val caixa = LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(20), dp(18), dp(20), dp(18))
+                setPadding(dp(14), dp(12), dp(14), dp(10))
                 background = GradientDrawable().apply {
-                    cornerRadius = dp(24).toFloat()
+                    cornerRadius = dp(18).toFloat()
                     setColor(Color.parseColor("#17233A"))
                     setStroke(dp(2), Color.parseColor("#FFC83D"))
                 }
@@ -44,35 +43,43 @@ class OverlayPedido(private val ctx: Context, private val aoConfirmar: (String) 
                 text = t; textSize = sp; setTextColor(Color.parseColor(cor))
                 if (negrito) setTypeface(typeface, Typeface.BOLD)
             }
-            caixa.addView(texto("Novo pedido — ${reais(p.totalCentavos)}", 20f, "#FFC83D", true))
-            caixa.addView(texto(p.itens.joinToString("\n") { "${it.qtd}× ${it.nome}" }, 17f, "#F4F6FA").apply {
-                setPadding(0, dp(8), 0, dp(12))
+            caixa.addView(texto("Novo pedido — ${reais(p.totalCentavos)}", 16f, "#FFC83D", true))
+            caixa.addView(texto(p.itens.joinToString("\n") { "${it.qtd}× ${it.nome}" }, 14f, "#F4F6FA").apply {
+                maxLines = 3
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(0, dp(4), 0, dp(8))
             })
+            fun botao(t: String, cor: String, corTexto: String, acao: () -> Unit) = TextView(ctx).apply {
+                text = t; textSize = 13f; gravity = Gravity.CENTER
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(Color.parseColor(corTexto))
+                setPadding(dp(12), dp(8), dp(12), dp(8))
+                background = GradientDrawable().apply { cornerRadius = dp(20).toFloat(); setColor(Color.parseColor(cor)) }
+                setOnClickListener { acao() }
+            }
             val botoes = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-            botoes.addView(Button(ctx).apply {
-                text = "Confirmar Pix recebido"
-                isAllCaps = false
-                setOnClickListener { aoConfirmar(p.id) }
-            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            botoes.addView(Button(ctx).apply {
-                text = "Fechar"
-                isAllCaps = false
-                setOnClickListener { esconder() }
-            })
+            botoes.addView(
+                botao("Confirmar Pix", "#FFC83D", "#0E1726") { aoConfirmar(p.id) },
+                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            )
+            botoes.addView(
+                botao("Fechar", "#22314D", "#F4F6FA") { esconder() },
+                LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    .apply { leftMargin = dp(8) }
+            )
             caixa.addView(botoes)
 
             val lp = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
+                dp(260), // estreito: não cobre a tela do Uber
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                // NOT_FOCUSABLE: o toque vai para o popup, mas o teclado/Uber por trás continuam normais.
+                // NOT_FOCUSABLE: o toque vai para o popup, mas o app por trás continua normal.
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT
             ).apply {
-                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                x = 0
-                y = dp(40)
-                horizontalMargin = 0.03f
+                gravity = Gravity.TOP or Gravity.END
+                x = dp(10)
+                y = dp(60)
             }
             wm.addView(caixa, lp)
             view = caixa
