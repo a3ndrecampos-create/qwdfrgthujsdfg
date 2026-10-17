@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -94,6 +95,34 @@ private fun BotaoPapel(titulo: String, subtitulo: String, destaque: Boolean, onC
     }
 }
 
+// ---------- Loja fechada (aparelho do passageiro) ----------
+@Composable
+fun TelaLojaFechada(estado: String, onTrocarFuncao: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(Modifier.size(96.dp).clip(CircleShape).background(Paleta.Painel), contentAlignment = Alignment.Center) {
+            Text("🌙", fontSize = 46.sp)
+        }
+        Spacer(Modifier.height(20.dp))
+        Text("Loja fechada", style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Quando o motorista abrir a loja, você poderá escolher seus produtos aqui.",
+            color = Paleta.TextoSuave, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 320.dp)
+        )
+        Spacer(Modifier.height(20.dp))
+        StatusPill(estado)
+        Spacer(Modifier.height(32.dp))
+        Text(
+            "Trocar função deste aparelho", color = Paleta.TextoSuave, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.clip(CircleShape).clickable(onClick = onTrocarFuncao).padding(horizontal = 16.dp, vertical = 10.dp)
+        )
+    }
+}
+
 // ---------- Pagamento (aparelho do passageiro) ----------
 @Composable
 fun TelaPix(config: LojaConfig, pedido: Pedido, pago: Boolean, onVoltar: () -> Unit) {
@@ -155,7 +184,16 @@ fun TelaPix(config: LojaConfig, pedido: Pedido, pago: Boolean, onVoltar: () -> U
 
 // ---------- Motorista ----------
 @Composable
-fun TelaMotorista(estado: String, pedidos: List<Pedido>, onConfigurar: () -> Unit, onConfirmar: (Pedido) -> Unit) {
+fun TelaMotorista(
+    estado: String,
+    pedidos: List<Pedido>,
+    lojaAberta: Boolean,
+    onLojaAberta: (Boolean) -> Unit,
+    mostrarBateria: Boolean,
+    onPermitirBateria: () -> Unit,
+    onConfigurar: () -> Unit,
+    onConfirmar: (Pedido) -> Unit
+) {
     Column(Modifier.fillMaxSize()) {
         Row(
             Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp),
@@ -172,6 +210,9 @@ fun TelaMotorista(estado: String, pedidos: List<Pedido>, onConfigurar: () -> Uni
             )
         }
 
+        CartaoLoja(lojaAberta, conectado = estado == "Conectado", onChange = onLojaAberta)
+        if (mostrarBateria) CartaoBateria(onPermitirBateria)
+
         if (pedidos.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 40.dp)) {
@@ -180,7 +221,7 @@ fun TelaMotorista(estado: String, pedidos: List<Pedido>, onConfigurar: () -> Uni
                     Text("Nenhum pedido ainda", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "Quando um passageiro fizer um pedido, ele aparece aqui e você recebe uma notificação.",
+                        "Quando um passageiro fizer um pedido, aparece um popup na tela, mesmo com outro app aberto.",
                         color = Paleta.TextoSuave, textAlign = TextAlign.Center
                     )
                 }
@@ -193,6 +234,50 @@ fun TelaMotorista(estado: String, pedidos: List<Pedido>, onConfigurar: () -> Uni
                 items(pedidos.reversed(), key = { it.id }) { p -> CardPedido(p, onConfirmar) }
             }
         }
+    }
+}
+
+/** Abre e fecha a loja: aberta = tablet travado na tela da loja; fechada = tablet liberado. */
+@Composable
+private fun CartaoLoja(aberta: Boolean, conectado: Boolean, onChange: (Boolean) -> Unit) {
+    val forma = RoundedCornerShape(24.dp)
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp).clip(forma)
+            .background(if (aberta) Paleta.Verde.copy(alpha = 0.16f) else Paleta.Painel)
+            .padding(18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(if (aberta) "Loja aberta" else "Loja fechada", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+            Text(
+                if (aberta) "O tablet está travado na loja. Só você destrava."
+                else "O tablet está liberado. Abra a loja quando o passageiro entrar.",
+                color = Paleta.TextoSuave, fontSize = 14.sp
+            )
+            if (!conectado) {
+                Text("Tablet desconectado: a mudança vale assim que ele conectar.", color = Paleta.Ambar, fontSize = 13.sp)
+            }
+        }
+        Switch(checked = aberta, onCheckedChange = onChange)
+    }
+}
+
+@Composable
+private fun CartaoBateria(onPermitir: () -> Unit) {
+    val forma = RoundedCornerShape(24.dp)
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp).clip(forma)
+            .background(Paleta.Ambar.copy(alpha = 0.14f)).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Para receber pedidos com o Uber na tela, deixe o app rodar em segundo plano.",
+            Modifier.weight(1f).padding(end = 12.dp), fontSize = 14.sp
+        )
+        Box(
+            Modifier.clip(CircleShape).background(Paleta.Ambar).clickable(onClick = onPermitir)
+                .padding(horizontal = 18.dp, vertical = 12.dp)
+        ) { Text("Permitir", color = Paleta.Noite, fontWeight = FontWeight.ExtraBold) }
     }
 }
 

@@ -9,7 +9,7 @@ package com.lojanocarro
 object CatalogoFicticio {
     val produtos = listOf(
         Produto("bala", "Bala de goma", 100, "🍬", "produtos/bala.jpg", "Doces", "#FF7AA2"),
-        Produto("refri", "Refrigerante lata 350ml", 500, "🥤", "produtos/refri.jpg", "Bebidas", "#FF5C4D"),
+        Produto("refri", "Refrigerante lata 350ml", 500, "🥤", "produtos/refri.jpg", "Bebidas", "#FF5C4D", destaque = true),
         Produto("choco", "Chocolate ao leite", 450, "🍫", "produtos/choco.jpg", "Doces", "#A9714B"),
         Produto("batata", "Batata chips", 600, "🥔", "produtos/batata.jpg", "Salgados", "#F7B32B"),
         Produto("agua", "Água mineral 500ml", 300, "💧", "produtos/agua.jpg", "Bebidas", "#4CC9F0")

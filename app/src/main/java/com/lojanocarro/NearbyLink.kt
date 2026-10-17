@@ -161,10 +161,10 @@ class NearbyLink(
         client.sendPayload(id, Payload.fromBytes(json.encodeToString(m).toByteArray()))
     }
 
-    /** Sem conexão, guarda na fila (exceto Config, que é reenviada a cada conexão). */
+    /** Sem conexão, só pedidos e confirmações esperam na fila; Config e fotos são reenviados a cada conexão. */
     fun enviar(m: Mensagem) {
         if (endpointId != null) enviarAgora(m)
-        else if (m !is Mensagem.Config && pendentes.size < 50) pendentes.addLast(m)
+        else if ((m is Mensagem.NovoPedido || m is Mensagem.PagamentoConfirmado) && pendentes.size < 50) pendentes.addLast(m)
     }
 
     /** Esquece o segredo: tablets pareados antes passam a pedir confirmação de dígitos de novo. */
