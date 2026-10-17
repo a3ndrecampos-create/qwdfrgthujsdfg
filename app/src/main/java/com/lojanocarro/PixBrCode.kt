@@ -12,7 +12,38 @@ object PixBrCode {
             .filter { it.code in 32..126 }
             .uppercase(Locale.ROOT)
 
-    fun gerar(chave: String, nomeRecebedor: String, cidadeRecebedor: String, centavos: Int, txid: String): String {
+    data class Dados(val chave: String, val nome: String, val cidade: String)
+
+    private fun campos(s: String): Map<String, String>? {
+        val m = LinkedHashMap<String, String>()
+        var i = 0
+        while (i < s.length) {
+            if (i + 4 > s.length) return null
+            val id = s.substring(i, i + 2)
+            val n = s.substring(i + 2, i + 4).toIntOrNull() ?: return null
+            if (i + 4 + n > s.length) return null
+            m[id] = s.substring(i + 4, i + 4 + n)
+            i += 4 + n
+        }
+        return m
+    }
+
+    /**
+     * Se o texto for um "Pix copia e cola" inteiro (começa com 000201), tira dele a chave, o nome e a cidade.
+     * Serve para quando o motorista cola o código todo no campo da chave.
+     */
+    fun extrair(texto: String): Dados? {
+        val t = texto.trim()
+        if (!t.startsWith("000201") || t.length < 40) return null
+        val topo = campos(t) ?: return null
+        val conta = campos(topo["26"] ?: return null) ?: return null
+        val chave = conta["01"]?.takeIf { it.isNotBlank() } ?: return null
+        return Dados(chave, topo["59"].orEmpty(), topo["60"].orEmpty())
+    }
+
+    fun gerar(chaveInformada: String, nomeRecebedor: String, cidadeRecebedor: String, centavos: Int, txid: String): String {
+        // Se já foi salvo o código inteiro no lugar da chave, usa só a chave que está dentro dele.
+        val chave = extrair(chaveInformada)?.chave ?: chaveInformada.trim()
         val nome = limpar(nomeRecebedor)
         val cidade = limpar(cidadeRecebedor)
         fun f(id: String, v: String) = id + v.length.toString().padStart(2, '0') + v

@@ -69,7 +69,21 @@ fun TelaConfiguracao(
 
             item {
                 Secao("Recebimento via Pix", "Esses dados geram o QR Code que o passageiro escaneia.") {
-                    OutlinedTextField(chavePix, { chavePix = it }, label = { Text("Chave Pix") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        chavePix,
+                        { novo ->
+                            // Colou o "Pix copia e cola" inteiro? Pega chave, nome e cidade dele automaticamente.
+                            val d = PixBrCode.extrair(novo)
+                            if (d != null) {
+                                chavePix = d.chave
+                                if (d.nome.isNotBlank()) nome = d.nome
+                                if (d.cidade.isNotBlank()) cidade = d.cidade
+                            } else chavePix = novo
+                        },
+                        label = { Text("Chave Pix") },
+                        supportingText = { Text("Só a chave (e-mail, CPF, telefone ou aleatória). Se colar o copia e cola inteiro, o app separa sozinho.") },
+                        singleLine = true, modifier = Modifier.fillMaxWidth()
+                    )
                     OutlinedTextField(nome, { nome = it }, label = { Text("Nome do recebedor") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(cidade, { cidade = it }, label = { Text("Cidade") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 }
