@@ -51,6 +51,12 @@ private val PASSOS = listOf(
 
 private const val PASSO_MS = 6_500L
 
+/** Com narração, cada passo espera a voz terminar (e um respiro) antes de trocar. */
+private const val PASSO_NARRADO_MS = 13_000L
+
+/** Com narração, depois do último passo o tablet fica em silêncio por este tempo antes de repetir tudo. */
+private const val PAUSA_CICLO_NARRADO_MS = 30_000L
+
 /**
  * Tela de descanso (modo atração): aparece quando ninguém está comprando e explica como pedir.
  * Se existir o arquivo app/src/main/res/raw/tutorial.mp4, ele toca em loop; senão roda um tutorial animado.
@@ -110,13 +116,19 @@ private fun VideoTutorial(resId: Int, comSom: Boolean) {
 private fun TutorialAnimado(produtos: List<Produto>, narrar: Boolean, onFalar: (String) -> Unit) {
     var passo by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(narrar) {
         while (true) {
-            delay(PASSO_MS)
+            if (narrar) {
+                onFalar(PASSOS[passo].fala)
+                delay(PASSO_NARRADO_MS)
+                // Terminou o último passo: silêncio antes de recomeçar, para não ficar repetindo sem parar.
+                if (passo == PASSOS.size - 1) delay(PAUSA_CICLO_NARRADO_MS)
+            } else {
+                delay(PASSO_MS)
+            }
             passo = (passo + 1) % PASSOS.size
         }
     }
-    LaunchedEffect(passo, narrar) { if (narrar) onFalar(PASSOS[passo].fala) }
 
     val pulso by rememberInfiniteTransition(label = "pulso").animateFloat(
         initialValue = 1f, targetValue = 1.07f,

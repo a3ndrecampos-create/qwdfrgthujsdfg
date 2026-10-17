@@ -15,7 +15,9 @@ data class Produto(
     /** Cor de embalagem (hex) que fica atrás da foto. */
     val cor: String = "#2E3F5F",
     /** Aparece no banner do topo da loja como sugestão do motorista. */
-    val destaque: Boolean = false
+    val destaque: Boolean = false,
+    /** Unidades em estoque. null = não controla (sempre disponível). 0 = esgotado. Baixa sozinho quando o Pix é confirmado. */
+    val estoque: Int? = null
 )
 
 @Serializable

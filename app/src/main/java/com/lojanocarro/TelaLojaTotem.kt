@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -75,6 +76,15 @@ fun TelaLojaTotem(
         }
     }
 
+    // Se o estoque mudou (o motorista editou ou outra venda baixou), tira do carrinho o que não existe mais.
+    LaunchedEffect(config.produtos) {
+        config.produtos.forEach { p ->
+            val est = p.estoque ?: return@forEach
+            val q = carrinho[p.id] ?: return@forEach
+            if (est <= 0) carrinho.remove(p.id) else if (q > est) carrinho[p.id] = est
+        }
+    }
+
     val atual = pedido
     if (atual != null) {
         TelaPix(config, atual, pago = pedidoPago == atual.id, onVoltar = {
@@ -89,11 +99,16 @@ fun TelaLojaTotem(
     val categorias = remember(config.produtos) { listOf(TODAS) + config.produtos.map { it.categoria }.distinct() }
     val filtro = if (categoria in categorias) categoria else TODAS
     val visiveis = if (filtro == TODAS) config.produtos else config.produtos.filter { it.categoria == filtro }
-    val destaque = config.produtos.firstOrNull { it.destaque }
+    val destaque = config.produtos.firstOrNull { it.destaque && ((it.estoque ?: 1) > 0) }
     val qtdTotal = carrinho.values.sum()
     val total = config.produtos.sumOf { (carrinho[it.id] ?: 0) * it.precoCentavos }
 
-    fun adicionar(p: Produto) { carrinho[p.id] = (carrinho[p.id] ?: 0) + 1 }
+    fun adicionar(p: Produto) {
+        val atual = carrinho[p.id] ?: 0
+        val est = p.estoque
+        if (est != null && atual >= est) return // não deixa pedir mais do que tem
+        carrinho[p.id] = atual + 1
+    }
     fun remover(p: Produto) {
         val q = (carrinho[p.id] ?: 0) - 1
         if (q <= 0) carrinho.remove(p.id) else carrinho[p.id] = q
@@ -253,12 +268,15 @@ private fun TrilhoCategorias(
 @Composable
 private fun CardProduto(produto: Produto, qtd: Int, onAdd: () -> Unit, onRemove: () -> Unit) {
     val selecionado = qtd > 0
+    val esgotado = produto.estoque?.let { it <= 0 } == true
+    val noLimite = produto.estoque?.let { qtd >= it } == true
     val borda by animateColorAsState(if (selecionado) Paleta.Amarelo else Color.Transparent, label = "borda")
     val forma = RoundedCornerShape(22.dp)
 
     Column(
-        Modifier.fillMaxWidth().clip(forma).background(Paleta.Painel)
-            .border(2.dp, borda, forma).clickable(onClick = onAdd)
+        Modifier.fillMaxWidth().then(if (esgotado) Modifier.alpha(0.45f) else Modifier)
+            .clip(forma).background(Paleta.Painel)
+            .border(2.dp, borda, forma).clickable(enabled = !esgotado && !noLimite, onClick = onAdd)
     ) {
         // O emoji fica por baixo; se a foto existir ela cobre o emoji, se não existir o emoji aparece.
         Box(Modifier.fillMaxWidth().aspectRatio(1f).background(produto.corFundo()), contentAlignment = Alignment.Center) {
@@ -282,8 +300,20 @@ private fun CardProduto(produto: Produto, qtd: Int, onAdd: () -> Unit, onRemove:
                 minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis
             )
             Text(reais(produto.precoCentavos), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Paleta.Amarelo)
+            val restam = produto.estoque
+            if (restam != null && restam in 1..5) {
+                Text(
+                    if (restam == 1) "Resta 1" else "Restam $restam",
+                    color = Paleta.Ambar, fontWeight = FontWeight.Bold, fontSize = 13.sp
+                )
+            }
             Spacer(Modifier.height(8.dp))
-            if (!selecionado) {
+            if (esgotado) {
+                Box(
+                    Modifier.fillMaxWidth().height(44.dp).clip(CircleShape).background(Paleta.Linha),
+                    contentAlignment = Alignment.Center
+                ) { Text("Esgotado", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Paleta.TextoSuave) }
+            } else if (!selecionado) {
                 Box(
                     Modifier.fillMaxWidth().height(44.dp).clip(CircleShape).background(Paleta.PainelAlto).clickable(onClick = onAdd),
                     contentAlignment = Alignment.Center
@@ -298,7 +328,7 @@ private fun CardProduto(produto: Produto, qtd: Int, onAdd: () -> Unit, onRemove:
                         "$qtd", Modifier.weight(1f), textAlign = TextAlign.Center,
                         color = Paleta.Noite, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp
                     )
-                    BotaoPasso("+", onAdd)
+                    BotaoPasso("+", onAdd, habilitado = !noLimite)
                 }
             }
         }
@@ -306,8 +336,12 @@ private fun CardProduto(produto: Produto, qtd: Int, onAdd: () -> Unit, onRemove:
 }
 
 @Composable
-private fun BotaoPasso(simbolo: String, onClick: () -> Unit) {
-    Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+private fun BotaoPasso(simbolo: String, onClick: () -> Unit, habilitado: Boolean = true) {
+    Box(
+        Modifier.size(44.dp).clip(CircleShape).alpha(if (habilitado) 1f else 0.3f)
+            .clickable(enabled = habilitado, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
         Text(simbolo, color = Paleta.Noite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
     }
 }

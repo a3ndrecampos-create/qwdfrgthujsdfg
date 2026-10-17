@@ -77,6 +77,14 @@ class MainActivity : ComponentActivity() {
     private fun bateriaLiberada(): Boolean =
         getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
 
+    private fun pedirSobreposicao() {
+        try {
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+        } catch (e: Exception) {
+            try { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)) } catch (_: Exception) {}
+        }
+    }
+
     private fun pedirIgnorarBateria() {
         try {
             startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
@@ -122,6 +130,7 @@ class MainActivity : ComponentActivity() {
         BackHandler(enabled = travar) { /* o botão voltar não faz nada com a loja aberta */ }
 
         val bateriaOk = remember(bateriaVersao) { bateriaLiberada() }
+        val sobreposicaoOk = remember(bateriaVersao) { core.sobreposicaoLiberada() }
 
         // Saída de emergência: 7 toques seguidos no canto superior esquerdo pedem o PIN.
         var toques by remember { mutableIntStateOf(0) }
@@ -142,6 +151,8 @@ class MainActivity : ComponentActivity() {
                             pedidos = core.pedidos,
                             lojaAberta = core.lojaAberta,
                             onLojaAberta = { core.definirLoja(it) },
+                            mostrarSobreposicao = !sobreposicaoOk,
+                            onPermitirSobreposicao = { pedirSobreposicao() },
                             mostrarBateria = !bateriaOk,
                             onPermitirBateria = { pedirIgnorarBateria() },
                             onConfigurar = { core.mostrarConfig(true) },

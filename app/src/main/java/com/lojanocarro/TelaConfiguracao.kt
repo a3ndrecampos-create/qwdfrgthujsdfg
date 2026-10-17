@@ -116,7 +116,8 @@ fun TelaConfiguracao(
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(top = 6.dp)) {
                     Text("Produtos", style = MaterialTheme.typography.titleLarge)
                     Text(
-                        "Toque na foto para escolher uma da galeria. Ela vai para o tablet sozinha quando os dois estiverem conectados.",
+                        "Toque na foto para escolher uma da galeria. Ela vai para o tablet sozinha quando os dois estiverem conectados. " +
+                            "Em Estoque, coloque quantas unidades você tem: o tablet não deixa pedir mais que isso e baixa sozinho a cada Pix confirmado. Deixe vazio para não controlar.",
                         color = Paleta.TextoSuave, fontSize = 14.sp
                     )
                 }
@@ -191,6 +192,7 @@ private fun LinhaInterruptor(titulo: String, detalhe: String, marcado: Boolean, 
 private fun LinhaProduto(p: Produto, onChange: (Produto) -> Unit, onRemover: () -> Unit) {
     // O texto do preço fica num estado próprio para dar para digitar "4,5" sem o campo reformatar a cada tecla.
     var preco by remember(p.id) { mutableStateOf(String.format(Locale.US, "%.2f", p.precoCentavos / 100.0)) }
+    var estoque by remember(p.id) { mutableStateOf(p.estoque?.toString() ?: "") }
 
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -271,6 +273,19 @@ private fun LinhaProduto(p: Produto, onChange: (Produto) -> Unit, onRemover: () 
                 p.categoria, { onChange(p.copy(categoria = it)) },
                 label = { Text("Categoria") }, singleLine = true, modifier = Modifier.weight(1f)
             )
+            OutlinedTextField(
+                estoque,
+                { v ->
+                    val limpo = v.filter { c -> c.isDigit() }.take(4)
+                    estoque = limpo
+                    onChange(p.copy(estoque = limpo.toIntOrNull()))
+                },
+                label = { Text("Estoque") }, placeholder = { Text("sem limite") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.width(110.dp)
+            )
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             Text(
                 "Remover", color = Paleta.Vermelho, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(CircleShape).clickable(onClick = onRemover).padding(horizontal = 14.dp, vertical = 12.dp)

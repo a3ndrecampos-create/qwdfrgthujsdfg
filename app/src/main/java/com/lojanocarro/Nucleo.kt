@@ -53,6 +53,7 @@ class LojaCore private constructor(private val app: Context) {
     private val store = ConfigStore(app)
     private val receptor = ReceptorFotos(app)
     private val falador = Falador(app)
+    private val overlay = OverlayPedido(app) { id -> confirmarPedido(id) }
 
     /** "motorista" ou "loja": função deste aparelho, lembrada para voltar sozinho depois de fechar e abrir o app. */
     private var papel: String? = prefs.getString("papel", null)
@@ -72,6 +73,9 @@ class LojaCore private constructor(private val app: Context) {
         private set
     var lojaAberta by mutableStateOf(prefs.getBoolean("loja_aberta", false))
         private set
+
+    /** Muda quando o app volta à tela, para reler se a permissão de sobreposição já foi dada. */
+    fun sobreposicaoLiberada(): Boolean = overlay.permitido()
 
     private val link = NearbyLink(
         app,
@@ -161,9 +165,33 @@ class LojaCore private constructor(private val app: Context) {
         if (i < 0 || pedidos[i].pago) return
         val p = pedidos[i].copy(pago = true)
         pedidos[i] = p
+        overlay.esconder(id)
         link.enviar(Mensagem.PagamentoConfirmado(id))
+        baixarEstoque(p)
         if (config.falarPedido) falador.falar(Falas.pedido(p))
         NotificationManagerCompat.from(app).cancel(id.hashCode())
+    }
+
+    // ---------- estoque ----------
+
+    /** Pix confirmado: desconta os itens vendidos do estoque e manda o catálogo atualizado ao tablet. */
+    private fun baixarEstoque(p: Pedido) {
+        if (papel != "motorista") return
+        val vendidos = p.itens.associate { it.produtoId to it.qtd }
+        var mudou = false
+        val novos = config.produtos.map { prod ->
+            val q = vendidos[prod.id]
+            val est = prod.estoque
+            if (q != null && est != null) {
+                mudou = true
+                prod.copy(estoque = (est - q).coerceAtLeast(0))
+            } else prod
+        }
+        if (!mudou) return
+        val nova = config.copy(produtos = novos)
+        config = nova
+        scope.launch(Dispatchers.IO) { store.salvar(nova) }
+        if (estado == "Conectado") link.enviar(Mensagem.Config(nova))
     }
 
     // ---------- configuração ----------
@@ -257,6 +285,7 @@ class LojaCore private constructor(private val app: Context) {
             .setAutoCancel(true)
             .build()
         try { NotificationManagerCompat.from(app).notify(p.id.hashCode(), n) } catch (_: SecurityException) {}
+        overlay.mostrar(p) // popup por cima do Uber (só aparece se o motorista liberou "Exibir sobre outros apps")
     }
 
     fun notificacaoServico(): Notification {

@@ -189,6 +189,8 @@ fun TelaMotorista(
     pedidos: List<Pedido>,
     lojaAberta: Boolean,
     onLojaAberta: (Boolean) -> Unit,
+    mostrarSobreposicao: Boolean,
+    onPermitirSobreposicao: () -> Unit,
     mostrarBateria: Boolean,
     onPermitirBateria: () -> Unit,
     onConfigurar: () -> Unit,
@@ -211,6 +213,7 @@ fun TelaMotorista(
         }
 
         CartaoLoja(lojaAberta, conectado = estado == "Conectado", onChange = onLojaAberta)
+        if (mostrarSobreposicao) CartaoSobreposicao(onPermitirSobreposicao)
         if (mostrarBateria) CartaoBateria(onPermitirBateria)
 
         if (pedidos.isEmpty()) {
@@ -259,6 +262,25 @@ private fun CartaoLoja(aberta: Boolean, conectado: Boolean, onChange: (Boolean) 
             }
         }
         Switch(checked = aberta, onCheckedChange = onChange)
+    }
+}
+
+@Composable
+private fun CartaoSobreposicao(onPermitir: () -> Unit) {
+    val forma = RoundedCornerShape(24.dp)
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp).clip(forma)
+            .background(Paleta.Ambar.copy(alpha = 0.14f)).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Para o popup do pedido aparecer por cima do Uber, permita \"Exibir sobre outros apps\".",
+            Modifier.weight(1f).padding(end = 12.dp), fontSize = 14.sp
+        )
+        Box(
+            Modifier.clip(CircleShape).background(Paleta.Ambar).clickable(onClick = onPermitir)
+                .padding(horizontal = 18.dp, vertical = 12.dp)
+        ) { Text("Permitir", color = Paleta.Noite, fontWeight = FontWeight.ExtraBold) }
     }
 }
 
